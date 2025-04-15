@@ -92,4 +92,10 @@ const login = async (req, res) => {
     }
 };
 
-module.exports = { signUp, login };
+const getProfile=(req, res) => {
+    return res.status(200).json({
+      message: 'User profile fetched successfully',
+      user: req.user
+    });
+  }
+module.exports = { signUp, login ,getProfile};
