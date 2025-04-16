@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const userModel = require('../model/user-model');
 const generateMessage = require('../helper/resMessage');
+const { generateAccessToken, generateRefreshToken } = require('../helper/token');
 
 require('dotenv').config()
 
@@ -73,24 +74,67 @@ const login = async (req, res) => {
             email: user.email,
             name: user.name 
         };
-        const secret = process.env.JWT_SECRET;
-        if (!secret) throw new Error('JWT_SECRET is not defined');
 
-        const token = jwt.sign(payload, secret, { expiresIn: '1h' });
+        const accessToken = generateAccessToken(payload);
+        const refreshToken = generateRefreshToken(payload);
+    
+        // const secret = process.env.JWT_SECRET;
+        // if (!secret) throw new Error('JWT_SECRET is not defined');
 
-        // Send cookie
-        res.cookie('token', token, cookieOptions);
+        // const token = jwt.sign(payload, secret, { expiresIn: '1h' });
 
-        // Prepare user object for response
-        const userObj = user.toObject();
-        userObj.token = token;
-        delete userObj.password;
+        // // Send cookie
+        // res.cookie('token', token, cookieOptions);
 
-        return generateMessage(res, 200, 'Login successful',{token:token},{ user: userObj });
+        // // Prepare user object for response
+        // const userObj = user.toObject();
+        // userObj.token = token;
+        // delete userObj.password;
+        res.cookie('refreshToken', refreshToken, {
+            httpOnly: true,
+            secure: true,
+            sameSite: 'Strict',
+            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+          });
+      
+          return generateMessage(res, 200, 'Login successful', { accessToken });
+
+        // return generateMessage(res, 200, 'Login successful',{token:token},{ user: userObj });
     } catch (error) {
         return generateMessage(res, 500, 'Internal server error', { error: error.message });
     }
 };
+
+const refreshAccessToken = (req, res) => {
+    try {
+        const token = req.cookies.refreshToken ||  req.headers.authorization;;
+    // console.log("token is ",token)
+        // Check if refresh token is present
+        if (!token) {
+            return generateMessage(res, 401, 'Refresh token is missing');
+        }
+
+        // Verify the refresh token
+        jwt.verify(token, process.env.JWT_REFRESH_SECRET, (err, user) => {
+            if (err) {
+                return generateMessage(res, 403, 'Invalid refresh token');
+            }
+
+            // Generate a new access token
+            const newAccessToken = generateAccessToken({
+                id: user.id,
+                email: user.email,
+                name: user.name,
+            });
+
+            return generateMessage(res, 200, 'Access token refreshed successfully', { accessToken: newAccessToken });
+        });
+    } catch (error) {
+        console.log("request here")
+        return generateMessage(res, 500, 'Internal server error', { error: error.message });
+    }
+};
+  
 
 const getProfile=(req, res) => {
     return res.status(200).json({
@@ -98,4 +142,4 @@ const getProfile=(req, res) => {
       user: req.user
     });
   }
-module.exports = { signUp, login ,getProfile};
+module.exports = { signUp, login ,getProfile,refreshAccessToken };
