@@ -187,9 +187,9 @@ const forgotPassword = async (req, res) => {
       { email, otp, validity },
       { upsert: true, new: true }
     );
-
+    const name=user?.name
     // Send OTP to user via email
-    await sendOtpEmail(email, otp);
+    await sendOtpEmail(email, otp,name);
 
     return generateMessage(res, 200, "OTP sent to your email");
   } catch (error) {
