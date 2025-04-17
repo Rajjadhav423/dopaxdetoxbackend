@@ -1,3 +1,4 @@
+// controller\auth-controller.js
 const jwt = require("jsonwebtoken");
 const bcrypt = require('bcryptjs');
 const userModel = require("../model/user-model");
@@ -240,8 +241,9 @@ const resetPassword = async (req, res) => {
       return generateMessage(res, 404, "User not found");
     }
 
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-    user.password = hashedPassword;
+    // const hashedPassword = await bcrypt.hash(newPassword, 10);
+    user.password = newPassword;
+
     await user.save();
 
     // Delete OTP after successful password reset

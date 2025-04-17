@@ -1,4 +1,4 @@
-const generateMessage = (res, statusCode, message,token=null, data = null) => {
+const generateMessage = (res, statusCode, message,data = null,token=null) => {
     const response = {
         statusCode: statusCode,
         message: message,
